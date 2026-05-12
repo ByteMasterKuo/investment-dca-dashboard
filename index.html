@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>指数定投收益策略对比</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Investment Strategy Dashboard</p>
+        <h1>纳指与标普500定投收益对比</h1>
+        <p id="meta-text" class="meta-text">正在加载数据...</p>
+      </div>
+      <div class="controls">
+        <a href="./calculator.html" class="back-link" style="margin-right:12px">🧮 VA 定投计算器</a>
+        <label for="index-select">选择指数</label>
+        <select id="index-select"></select>
+      </div>
+    </header>
+
+    <section class="summary-grid" id="summary-grid"></section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>动态策略参数</h2>
+        <p>控制“目标收益带宽定投”的预期年化、月定投基准和可接受波动幅度。</p>
+      </div>
+      <div class="form-grid">
+        <label class="field">
+          <span>起投时间</span>
+          <input id="start-date" type="date">
+        </label>
+        <label class="field">
+          <span>截止时间</span>
+          <input id="end-date" type="date">
+        </label>
+        <label class="field">
+          <span>年化通胀 y%</span>
+          <input id="inflation-rate" type="number" min="0" step="0.1">
+        </label>
+        <label class="field">
+          <span>预期年化收益率 x%</span>
+          <input id="annual-target-return" type="number" min="0" step="0.1">
+        </label>
+        <label class="field">
+          <span>每月预期定投金额 a</span>
+          <input id="monthly-base-amount" type="number" min="0" step="10">
+        </label>
+        <label class="field">
+          <span>可接受波动幅度 b</span>
+          <input id="monthly-band" type="number" min="0" step="10">
+        </label>
+        <div class="field action-field">
+          <span>操作</span>
+          <button id="recalculate-btn" type="button">重新计算策略</button>
+        </div>
+      </div>
+      <p class=”formula-note”>
+        可修改起投和截止时间，所有策略都会在该区间内重新回测，方便观察特定市场阶段（如熊市、牛市）的策略表现。通胀参数会把每笔历史投入折算到回测结束日，得到”通胀对齐本金”。动态策略采用标准价值平均法（Value Averaging）：第 n 月的目标市值为 <code>V(n) = a × n × (1 + r_月)^n</code>，单月投入钳制在 <code>[a−b, a+b]</code>。当 b ≤ a 时下限为正，策略只买不卖；当 b &gt; a 时下限转负，市值大幅高于目标路径时触发减仓，每月最大减仓额为 <code>b − a</code>，与无限制VA的区别在于单次操作幅度受控。
+      </p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>策略资产净值曲线</h2>
+        <p>展示每种策略在整个历史区间的组合市值变化。</p>
+      </div>
+      <div class="chart-wrap chart-wrap--tall">
+        <canvas id="portfolio-chart"></canvas>
+      </div>
+    </section>
+
+    <section class="chart-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <h2>年化收益率对比</h2>
+          <p>按资金时间价值计算的年化收益率。</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="annualized-chart"></canvas>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>通胀对齐本金与期末资产</h2>
+          <p>对比各策略的通胀对齐本金与区间结束时资产总值。</p>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="principal-chart"></canvas>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel">
+      <div class="panel-header">
+        <h2>详细指标</h2>
+        <p>策略说明、本金、总回报和持有股数汇总。</p>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>策略</th>
+              <th>说明</th>
+              <th>名义本金</th>
+              <th>通胀对齐本金</th>
+              <th>期末资产</th>
+              <th>实际倍数</th>
+              <th>通胀对齐后回报</th>
+              <th>通胀对齐后回报率</th>
+              <th>年化收益率</th>
+              <th>总股数</th>
+            </tr>
+          </thead>
+          <tbody id="metrics-body"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js" integrity="sha384-oNtu+d18330MVFpltUTve1DatxCkkctlpA2AC3GulbVFOSqhHdDat3qHse/Lbuek" crossorigin="anonymous"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

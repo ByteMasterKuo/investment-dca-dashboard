@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VA 定投计算器</title>
+  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./calculator.css">
+</head>
+<body>
+  <main class="page">
+
+    <header class="hero">
+      <div>
+        <p class="eyebrow">Banded Value Averaging</p>
+        <h1>VA 定投计算器</h1>
+        <p class="meta-text">根据当前持仓计算本月应买入或卖出的金额，参数自动保存。</p>
+      </div>
+      <div class="controls">
+        <a href="./index.html" class="back-link">← 回到分析仪表板</a>
+      </div>
+    </header>
+
+    <!-- ① 策略参数 -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>策略参数</h2>
+        <p id="config-status" class="meta-text">参数将自动保存到浏览器</p>
+      </div>
+      <div class="form-grid form-grid--5">
+        <label class="field">
+          <span>策略起始月份</span>
+          <input id="cfg-start" type="month" placeholder="2024-01">
+        </label>
+        <label class="field">
+          <span>月定投基准 a（USD）</span>
+          <input id="cfg-a" type="number" min="0" step="100" placeholder="1500">
+        </label>
+        <label class="field">
+          <span>波动带宽 b（USD）</span>
+          <input id="cfg-b" type="number" min="0" step="100" placeholder="3000">
+        </label>
+        <label class="field">
+          <span>预期年化收益率 r%</span>
+          <input id="cfg-r" type="number" min="0" step="0.5" placeholder="10">
+        </label>
+        <label class="field">
+          <span>ETF 名称（选填）</span>
+          <input id="cfg-etf" type="text" placeholder="EQQQ">
+        </label>
+      </div>
+      <p class="formula-note">
+        投入区间 = [a−b, a+b]。当 b ≤ a 时只买不卖；当 b &gt; a 时允许减仓，每月最大减仓额为 b−a。
+        目标市值路径：<code>V(n) = a × n × (1 + r月)ⁿ</code>
+      </p>
+    </section>
+
+    <!-- ② 当前持仓输入 -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>本月持仓</h2>
+        <p>输入当前市值，计算本月操作金额</p>
+      </div>
+      <div class="form-grid form-grid--4">
+        <label class="field">
+          <span>当前月份</span>
+          <input id="cur-month" type="month">
+        </label>
+        <label class="field">
+          <span>当前持仓市值（USD）</span>
+          <input id="cur-value" type="number" min="0" step="100" placeholder="28000">
+        </label>
+        <label class="field">
+          <span>ETF 当前单价（USD，选填）</span>
+          <input id="cur-price" type="number" min="0" step="0.01" placeholder="520">
+        </label>
+        <label class="field">
+          <span>备注（选填）</span>
+          <input id="cur-note" type="text" placeholder="发薪后操作">
+        </label>
+      </div>
+      <div style="margin-top:14px">
+        <button id="calc-btn" class="btn-primary" type="button">计算本月操作 →</button>
+      </div>
+    </section>
+
+    <!-- ③ 计算结果 -->
+    <section id="result-section" class="panel result-hidden">
+      <div class="panel-header">
+        <h2 id="result-title">计算结果</h2>
+        <p id="result-subtitle"></p>
+      </div>
+
+      <div class="result-layout">
+
+        <!-- 左：指标卡片 -->
+        <div class="result-cards">
+          <div class="metric-card">
+            <div class="metric-label">目标市值</div>
+            <div class="metric-value" id="res-target">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">当前市值</div>
+            <div class="metric-value" id="res-current">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">偏离目标</div>
+            <div class="metric-value" id="res-dev">—</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-label">操作后市值</div>
+            <div class="metric-value" id="res-after">—</div>
+          </div>
+        </div>
+
+        <!-- 右：操作信号 -->
+        <div class="action-card" id="action-card">
+          <div class="action-month" id="action-month"></div>
+          <div class="action-signal" id="action-icon"></div>
+          <div class="action-amount" id="action-amount"></div>
+          <div class="action-shares" id="action-shares"></div>
+          <div class="progress-wrap">
+            <div class="progress-label">
+              <span>0</span><span id="prog-label-mid"></span><span id="prog-label-end"></span>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill" id="progress-fill"></div>
+              <div class="progress-target" id="progress-target"></div>
+            </div>
+            <div class="progress-hint" id="progress-hint"></div>
+          </div>
+          <div class="action-band" id="action-band"></div>
+          <button id="record-btn" class="btn-record" type="button">📝 记录本月操作</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ④ 未来目标路径 -->
+    <section id="future-section" class="panel result-hidden">
+      <div class="panel-header">
+        <h2>未来 6 个月目标路径</h2>
+        <p>提前规划每月资金准备</p>
+      </div>
+      <div class="table-wrap">
+        <table id="future-table">
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>第 n 月</th>
+              <th>目标市值</th>
+              <th>较本月增量</th>
+              <th>买入区间</th>
+              <th>最大减仓</th>
+            </tr>
+          </thead>
+          <tbody id="future-body"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ⑤ 历史记录 -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>历史操作记录</h2>
+        <div style="display:flex;gap:10px">
+          <button id="export-btn" class="btn-secondary" type="button">导出 CSV</button>
+          <button id="clear-btn"  class="btn-danger"    type="button">清空记录</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table id="history-table">
+          <thead>
+            <tr>
+              <th>月份</th>
+              <th>第n月</th>
+              <th>目标市值</th>
+              <th>操作前市值</th>
+              <th>操作</th>
+              <th>操作金额</th>
+              <th>操作后市值</th>
+              <th>ETF单价</th>
+              <th>备注</th>
+            </tr>
+          </thead>
+          <tbody id="history-body">
+            <tr><td colspan="9" style="text-align:center;color:var(--muted)">暂无记录</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+  <script src="./calculator.js"></script>
+</body>
+</html>
