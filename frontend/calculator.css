@@ -1,0 +1,175 @@
+/* ── 布局扩展 ───────────────────────────────────────────── */
+.form-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+.form-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+.back-link {
+  display: inline-block;
+  padding: 10px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  text-decoration: none;
+  font-size: 14px;
+  background: var(--panel);
+}
+.back-link:hover { color: var(--accent); border-color: var(--accent); }
+
+/* ── 按钮 ──────────────────────────────────────────────── */
+.btn-primary {
+  padding: 12px 28px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-primary:hover { opacity: 0.88; }
+
+.btn-secondary {
+  padding: 8px 16px;
+  background: var(--panel);
+  color: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-secondary:hover { color: var(--accent); border-color: var(--accent); }
+
+.btn-danger {
+  padding: 8px 16px;
+  background: var(--panel);
+  color: #c2410c;
+  border: 1px solid #fca5a5;
+  border-radius: 10px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.btn-danger:hover { background: #fef2f2; }
+
+.btn-record {
+  width: 100%;
+  margin-top: 16px;
+  padding: 12px;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  border-radius: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-record:hover { background: #dcfce7; }
+.btn-record:disabled { opacity: 0.4; cursor: default; }
+
+/* ── 结果区域 ───────────────────────────────────────────── */
+.result-hidden { display: none; }
+
+.result-layout {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 20px;
+  align-items: start;
+}
+
+.result-cards {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.metric-card {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+}
+.metric-label { font-size: 13px; color: var(--muted); margin-bottom: 6px; }
+.metric-value { font-size: 22px; font-weight: 700; }
+
+/* ── 操作信号卡 ─────────────────────────────────────────── */
+.action-card {
+  border: 2px solid var(--border);
+  border-radius: 18px;
+  padding: 22px;
+  text-align: center;
+  background: var(--panel);
+}
+.action-card.buy  { border-color: #86efac; background: #f0fdf4; }
+.action-card.sell { border-color: #fca5a5; background: #fff5f5; }
+.action-card.hold { border-color: var(--border); background: var(--bg); }
+
+.action-month  { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+.action-signal { font-size: 48px; line-height: 1.1; }
+.action-amount { font-size: 28px; font-weight: 800; margin: 4px 0 2px; }
+.action-shares { font-size: 13px; color: var(--muted); min-height: 20px; }
+.action-band   { font-size: 12px; color: var(--muted); margin-top: 10px; }
+
+/* 操作金额颜色 */
+.action-card.buy  .action-amount { color: #0b8f55; }
+.action-card.sell .action-amount { color: #c2410c; }
+.action-card.hold .action-amount { color: var(--muted); }
+
+/* ── 进度条 ─────────────────────────────────────────────── */
+.progress-wrap { margin: 14px 0 8px; text-align: left; }
+
+.progress-label {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 4px;
+}
+
+.progress-track {
+  position: relative;
+  height: 10px;
+  background: var(--border);
+  border-radius: 6px;
+  overflow: visible;
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: 6px;
+  transition: width 0.4s ease;
+  max-width: 100%;
+}
+.action-card.buy  .progress-fill { background: #4ade80; }
+.action-card.sell .progress-fill { background: #fb923c; }
+.action-card.hold .progress-fill { background: #94a3b8; }
+
+.progress-target {
+  position: absolute;
+  top: -3px;
+  width: 3px;
+  height: 16px;
+  background: var(--accent);
+  border-radius: 2px;
+  transform: translateX(-50%);
+}
+
+.progress-hint {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 4px;
+  text-align: right;
+}
+
+/* ── 未来路径表格 ────────────────────────────────────────── */
+#future-table td, #future-table th { white-space: nowrap; }
+.next-month td { font-weight: 600; background: #eff6ff; }
+
+/* ── 历史表格 ───────────────────────────────────────────── */
+.op-buy  { color: #0b8f55; font-weight: 600; }
+.op-sell { color: #c2410c; font-weight: 600; }
+.op-hold { color: var(--muted); }
+
+/* ── 响应式 ─────────────────────────────────────────────── */
+@media (max-width: 960px) {
+  .form-grid--5, .form-grid--4 { grid-template-columns: 1fr; }
+  .result-layout { grid-template-columns: 1fr; }
+  .result-cards  { grid-template-columns: 1fr 1fr; }
+}
