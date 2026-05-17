@@ -302,6 +302,73 @@ function simulateUnlimitedVaStrategy(marketTimeline, annualTargetReturnPct, mont
   return result;
 }
 
+// 通胀调整 VA：V(n) = V(n-1)×(1+r月) + a×(1+x月)ⁿ，带宽随通胀缩放
+function simulateInflationVaStrategy(marketTimeline, annualTargetReturnPct, monthlyBaseAmount, band, annualInflationPct) {
+  const monthlyTargetRate    = (1 + annualTargetReturnPct / 100) ** (1 / 12) - 1;
+  const monthlyInflationRate = (1 + annualInflationPct  / 100) ** (1 / 12) - 1;
+  let previousPeriod = null;
+  let periodIndex    = 0;
+  let prevTarget     = 0;   // 上个月的目标市值（递推用）
+  let netPrincipal   = 0;
+  let shares         = 0;
+  const cashFlows    = [];
+  const series       = [];
+  const canSell      = band > monthlyBaseAmount;
+
+  marketTimeline.forEach((point) => {
+    const periodKey = point.date.slice(0, 7);
+    if (periodKey !== previousPeriod) {
+      previousPeriod = periodKey;
+      periodIndex   += 1;
+
+      // 目标市值：V(n) = V(n-1)×(1+r月) + a×(1+x月)ⁿ
+      const targetValue = prevTarget * (1 + monthlyTargetRate)
+        + monthlyBaseAmount * (1 + monthlyInflationRate) ** periodIndex;
+      prevTarget = targetValue;
+
+      // 当月通胀调整后的基线和带宽
+      const effBase = monthlyBaseAmount * (1 + monthlyInflationRate) ** periodIndex;
+      const effBand = band             * (1 + monthlyInflationRate) ** periodIndex;
+
+      const currentValue    = shares * point.average_price;
+      const rawInvestAmount = targetValue - currentValue;
+      const investAmount    = Math.min(
+        Math.max(rawInvestAmount, effBase - effBand),
+        effBase + effBand,
+      );
+
+      if (investAmount > 0) {
+        shares       += investAmount / point.average_price;
+        netPrincipal += investAmount;
+        cashFlows.push({ date: point.date, amount: -investAmount });
+      } else if (investAmount < 0) {
+        const sellValue = Math.min(-investAmount, shares * point.average_price);
+        shares       -= sellValue / point.average_price;
+        netPrincipal -= sellValue;
+        cashFlows.push({ date: point.date, amount: sellValue });
+      }
+    }
+
+    series.push({
+      date:      point.date,
+      value:     Number((shares * point.average_price).toFixed(2)),
+      principal: Number(netPrincipal.toFixed(2)),
+      shares:    Number(shares.toFixed(6)),
+    });
+  });
+
+  const sellNote = canSell ? `；带宽大于基线，允许减仓` : `；只买不卖`;
+  return summarizeStrategy({
+    key:   "inflation_va",
+    label: "通胀调整 VA",
+    description: `通胀调整 VA：V(n)=V(n-1)×(1+r月)+a×(1+x月)ⁿ，投入基线与带宽随通胀率 ${annualInflationPct.toFixed(1)}% 同步增长，预期年化 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月、带宽 ${band.toFixed(0)} 美元${sellNote}。`,
+    principal: netPrincipal,
+    shares,
+    cashFlows,
+    series,
+  });
+}
+
 function simulateDynamicStrategy(marketTimeline, annualTargetReturnPct, monthlyBaseAmount, band) {
   const monthlyTargetRate = (1 + annualTargetReturnPct / 100) ** (1 / 12) - 1;
   let previousPeriod = null;
@@ -425,6 +492,13 @@ function buildStrategies(indexData) {
       Number.isFinite(inputs.annualTargetReturnPct) ? inputs.annualTargetReturnPct : defaults.annual_target_return_pct,
       Number.isFinite(inputs.monthlyBaseAmount) ? inputs.monthlyBaseAmount : defaults.monthly_base_amount,
       Number.isFinite(inputs.band) ? inputs.band : defaults.band,
+    ),
+    simulateInflationVaStrategy(
+      marketTimeline,
+      Number.isFinite(inputs.annualTargetReturnPct) ? inputs.annualTargetReturnPct : defaults.annual_target_return_pct,
+      Number.isFinite(inputs.monthlyBaseAmount) ? inputs.monthlyBaseAmount : defaults.monthly_base_amount,
+      Number.isFinite(inputs.band) ? inputs.band : defaults.band,
+      Number.isFinite(inputs.inflationRate) && inputs.inflationRate > 0 ? inputs.inflationRate : (defaults.inflation_rate_pct || 3.0),
     ),
     simulateUnlimitedVaStrategy(
       marketTimeline,
