@@ -788,7 +788,7 @@ function renderIndex(indexKey) {
 }
 
 async function init() {
-  const response = await fetch("./data/analysis.json");
+  const response = await fetch(`./data/analysis.json?v=${Date.now()}`);
   appData = await response.json();
   const defaults = appData.meta.dynamic_strategy_defaults;
   const select = document.getElementById("index-select");
