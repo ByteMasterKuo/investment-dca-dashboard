@@ -95,7 +95,42 @@
       </div>
     </section>
 
-    <!-- ③ 计算结果 -->
+    <!-- ③ 12个月目标规划（独立） -->
+    <section class="panel">
+      <div class="panel-header">
+        <h2>📅 未来 12 个月目标规划</h2>
+        <p>输入当前市值，自动读取上方策略参数，预测未来 12 个月的目标市值与操作区间（无需填写当前月份）。</p>
+      </div>
+      <div class="form-grid form-grid--4">
+        <label class="field">
+          <span>当前持仓市值（USD）</span>
+          <input id="plan-value" type="number" min="0" step="100" placeholder="28000">
+        </label>
+      </div>
+      <div style="margin-top:14px">
+        <button id="plan-btn" class="btn-primary" type="button">生成 12 个月规划 →</button>
+      </div>
+      <div id="plan-result" style="display:none;margin-top:20px">
+        <div class="table-wrap">
+          <table id="plan-table">
+            <thead>
+              <tr>
+                <th>月数</th>
+                <th>目标市值</th>
+                <th>较当前累计增量</th>
+                <th>本月目标增量</th>
+                <th>买入区间</th>
+                <th>最大减仓</th>
+              </tr>
+            </thead>
+            <tbody id="plan-body"></tbody>
+          </table>
+        </div>
+        <p id="plan-note" class="formula-note" style="margin-top:10px"></p>
+      </div>
+    </section>
+
+    <!-- ⑤ 计算结果 -->
     <section id="result-section" class="panel result-hidden">
       <div class="panel-header">
         <h2 id="result-title">计算结果</h2>
@@ -146,7 +181,7 @@
       </div>
     </section>
 
-    <!-- ④ 未来目标路径 -->
+    <!-- ⑥ 未来目标路径 -->
     <section id="future-section" class="panel result-hidden">
       <div class="panel-header">
         <h2>未来 6 个月目标路径</h2>
@@ -169,7 +204,7 @@
       </div>
     </section>
 
-    <!-- ⑤ 历史记录 -->
+    <!-- ⑦ 历史记录 -->
     <section class="panel">
       <div class="panel-header">
         <h2>历史操作记录</h2>
