@@ -9,12 +9,28 @@ function targetValue(n, base, annualR) {
   return base * n * (1 + r) ** n;
 }
 
-function vaAction(currentValue, n, base, annualR, band) {
-  const target  = targetValue(n, base, annualR);
+// 通胀调整 VA：V(n) = V(n-1)×(1+r月) + base×(1+x月)ⁿ
+function targetValueInflation(n, base, annualR, annualX) {
+  const r = monthlyRate(annualR);
+  const x = monthlyRate(annualX);
+  let v = 0;
+  for (let i = 1; i <= n; i++) {
+    v = v * (1 + r) + base * (1 + x) ** i;
+  }
+  return v;
+}
+
+function vaAction(currentValue, n, base, annualR, band, annualX = 0) {
+  const x       = monthlyRate(annualX);
+  const effBase = annualX > 0 ? base * (1 + x) ** n : base;
+  const effBand = annualX > 0 ? band * (1 + x) ** n : band;
+  const target  = annualX > 0
+    ? targetValueInflation(n, base, annualR, annualX)
+    : targetValue(n, base, annualR);
   const raw     = target - currentValue;
-  let   clamped = Math.min(Math.max(raw, base - band), base + band);
+  let   clamped = Math.min(Math.max(raw, effBase - effBand), effBase + effBand);
   clamped = Math.max(clamped, -currentValue); // 不能卖超持仓
-  return { target, raw, clamped, clipped: Math.abs(clamped - raw) > 0.01 };
+  return { target, raw, clamped, clipped: Math.abs(clamped - raw) > 0.01, effBase, effBand };
 }
 
 function monthN(startYM, currentYM) {
@@ -72,20 +88,26 @@ function saveHistory(rows) {
 
 function getConfig() {
   return {
-    startDate: document.getElementById("cfg-start").value,
-    a:         Number(document.getElementById("cfg-a").value),
-    b:         Number(document.getElementById("cfg-b").value),
-    rPct:      Number(document.getElementById("cfg-r").value),
-    etfName:   document.getElementById("cfg-etf").value.trim(),
+    startDate:    document.getElementById("cfg-start").value,
+    a:            Number(document.getElementById("cfg-a").value),
+    b:            Number(document.getElementById("cfg-b").value),
+    rPct:         Number(document.getElementById("cfg-r").value),
+    etfName:      document.getElementById("cfg-etf").value.trim(),
+    strategyType: document.getElementById("cfg-strategy").value,
+    xPct:         Number(document.getElementById("cfg-x").value) || 0,
   };
 }
 
 function applyConfig(cfg) {
-  document.getElementById("cfg-start").value = cfg.startDate || "";
-  document.getElementById("cfg-a").value     = cfg.a     || "";
-  document.getElementById("cfg-b").value     = cfg.b     || "";
-  document.getElementById("cfg-r").value     = cfg.rPct  || "";
-  document.getElementById("cfg-etf").value   = cfg.etfName || "";
+  document.getElementById("cfg-start").value    = cfg.startDate || "";
+  document.getElementById("cfg-a").value        = cfg.a        || "";
+  document.getElementById("cfg-b").value        = cfg.b        || "";
+  document.getElementById("cfg-r").value        = cfg.rPct     || "";
+  document.getElementById("cfg-etf").value      = cfg.etfName  || "";
+  document.getElementById("cfg-strategy").value = cfg.strategyType || "standard";
+  document.getElementById("cfg-x").value        = cfg.xPct     || "";
+  document.getElementById("field-x").style.display =
+    (cfg.strategyType === "inflation") ? "" : "none";
 }
 
 // ── 历史表格渲染 ─────────────────────────────────────────────────────────────
@@ -132,6 +154,10 @@ function calculate() {
     alert("请填写所有必填项（策略参数 + 当前月份 + 当前市值）");
     return;
   }
+  if (cfg.strategyType === "inflation" && !cfg.xPct) {
+    alert("通胀调整 VA 需要填写通货膨胀率 x%");
+    return;
+  }
   const n = monthN(cfg.startDate, currentYM);
   if (n <= 0) {
     alert("当前月份早于策略起始月份，请检查。");
@@ -143,14 +169,15 @@ function calculate() {
 
   // ── 核心计算 ─────────────────────────────────────────────────────────────
   const annualR = cfg.rPct / 100;
-  const res     = vaAction(currentVal, n, cfg.a, annualR, cfg.b);
-  const { target, raw, clamped, clipped } = res;
+  const annualX = cfg.strategyType === "inflation" ? cfg.xPct / 100 : 0;
+  const res     = vaAction(currentVal, n, cfg.a, annualR, cfg.b, annualX);
+  const { target, raw, clamped, clipped, effBase, effBand } = res;
   const afterVal = currentVal + clamped;
   const devPct   = (currentVal / target - 1) * 100;
   const afterPct = (afterVal  / target - 1) * 100;
 
   // ── 记录当前结果供"记录"按钮使用 ─────────────────────────────────────────
-  lastResult = { cfg, currentYM, n, target, raw, clamped, currentVal, afterVal, price };
+  lastResult = { cfg, currentYM, n, target, raw, clamped, currentVal, afterVal, price, annualX };
 
   // ── 操作类型 ─────────────────────────────────────────────────────────────
   let actionType, icon, amountText, sharesText, cardClass;
@@ -203,9 +230,10 @@ function calculate() {
   document.getElementById("progress-hint").textContent   = `操作后偏差：${fmtPct(afterPct)}`;
 
   // 带宽提示
-  const bandLo = cfg.a - cfg.b;
-  const bandHi = cfg.a + cfg.b;
-  let bandNote = `带宽 [${fmtUSD(bandLo < 0 ? bandLo : bandLo, 0)}, ${fmtUSD(bandHi, 0)}]`;
+  const bandLo = effBase - effBand;
+  const bandHi = effBase + effBand;
+  let bandNote = `带宽 [${fmtUSD(bandLo, 0)}, ${fmtUSD(bandHi, 0)}]`;
+  if (annualX > 0) bandNote += `  基线 ${fmtUSD(effBase, 0)}`;
   if (clipped) bandNote += "  ⚠️ 已触达带宽边界";
   document.getElementById("action-band").textContent = bandNote;
 
@@ -216,15 +244,20 @@ function calculate() {
 
   // 未来路径
   const futureBody = document.getElementById("future-body");
+  const xm = monthlyRate(annualX);
   futureBody.innerHTML = Array.from({ length: 6 }, (_, i) => {
-    const fi  = i + 1;
-    const fYM = addMonths(currentYM, fi);
-    const fn  = n + fi;
-    const ft  = targetValue(fn, cfg.a, annualR);
-    const dt  = ft - target;
-    const lo  = Math.max(cfg.a - cfg.b, 0);
-    const hi  = cfg.a + cfg.b;
-    const maxSell = Math.max(cfg.b - cfg.a, 0);
+    const fi    = i + 1;
+    const fYM   = addMonths(currentYM, fi);
+    const fn    = n + fi;
+    const ft    = annualX > 0
+      ? targetValueInflation(fn, cfg.a, annualR, annualX)
+      : targetValue(fn, cfg.a, annualR);
+    const dt    = ft - target;
+    const fBase = annualX > 0 ? cfg.a * (1 + xm) ** fn : cfg.a;
+    const fBand = annualX > 0 ? cfg.b * (1 + xm) ** fn : cfg.b;
+    const lo    = Math.max(fBase - fBand, 0);
+    const hi    = fBase + fBand;
+    const maxSell  = Math.max(fBand - fBase, 0);
     const rowClass = fi === 1 ? "next-month" : "";
     const nextTag  = fi === 1 ? " ← 下月" : "";
     return `<tr class="${rowClass}">
@@ -314,11 +347,16 @@ function exportCSV() {
 // ── 参数变化时自动保存 ────────────────────────────────────────────────────────
 
 function bindAutoSave() {
-  ["cfg-start","cfg-a","cfg-b","cfg-r","cfg-etf"].forEach(id => {
+  ["cfg-start","cfg-a","cfg-b","cfg-r","cfg-etf","cfg-strategy","cfg-x"].forEach(id => {
     document.getElementById(id).addEventListener("change", () => {
       const cfg = getConfig();
       if (cfg.startDate && cfg.a && cfg.b && cfg.rPct) saveConfig(cfg);
     });
+  });
+  // 切换策略时显示/隐藏通胀率输入框
+  document.getElementById("cfg-strategy").addEventListener("change", () => {
+    const isInflation = document.getElementById("cfg-strategy").value === "inflation";
+    document.getElementById("field-x").style.display = isInflation ? "" : "none";
   });
 }
 
