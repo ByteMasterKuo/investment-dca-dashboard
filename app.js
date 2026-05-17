@@ -263,7 +263,10 @@ function simulateUnlimitedVaStrategy(marketTimeline, annualTargetReturnPct, mont
       previousPeriod = periodKey;
       periodIndex += 1;
       const currentValue = shares * point.average_price;
-      const targetValue = monthlyBaseAmount * periodIndex * (1 + monthlyTargetRate) ** periodIndex;
+      // 年金终值公式：V(n) = a×[(1+r月)ⁿ−1]/r月，每月固定贡献 a
+      const targetValue = Math.abs(monthlyTargetRate) < 1e-10
+        ? monthlyBaseAmount * periodIndex
+        : monthlyBaseAmount * ((1 + monthlyTargetRate) ** periodIndex - 1) / monthlyTargetRate;
       const delta = targetValue - currentValue;
 
       if (delta > 0) {
@@ -291,7 +294,7 @@ function simulateUnlimitedVaStrategy(marketTimeline, annualTargetReturnPct, mont
   const result = summarizeStrategy({
     key: "unlimited_va",
     label: "无限制价值平均",
-    description: `无带宽约束的价值平均法，目标市值 V(n)=a×n×(1+r月)ⁿ，不足时全额补入，超出时减仓至目标，年化目标 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月。`,
+    description: `无带宽约束的价值平均法，目标市值 V(n)=a×[(1+r月)ⁿ−1]/r月，不足时全额补入，超出时减仓至目标，年化目标 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月。`,
     principal: netPrincipal,
     shares,
     cashFlows,
@@ -385,8 +388,10 @@ function simulateDynamicStrategy(marketTimeline, annualTargetReturnPct, monthlyB
       previousPeriod = periodKey;
       periodIndex += 1;
       const currentValue = shares * point.average_price;
-      // 标准价值平均法：目标市值沿固定复利路径增长 V_n = base × n × (1 + r_月)^n
-      const targetValue = monthlyBaseAmount * periodIndex * (1 + monthlyTargetRate) ** periodIndex;
+      // 年金终值公式：V(n) = a×[(1+r月)ⁿ−1]/r月，每月固定贡献 a（Edleson 原版 VA）
+      const targetValue = Math.abs(monthlyTargetRate) < 1e-10
+        ? monthlyBaseAmount * periodIndex
+        : monthlyBaseAmount * ((1 + monthlyTargetRate) ** periodIndex - 1) / monthlyTargetRate;
       const rawInvestAmount = targetValue - currentValue;
       // 区间 [base−band, base+band]；当 band > base 时下限为负，允许减仓
       const investAmount = Math.min(
@@ -422,7 +427,7 @@ function simulateDynamicStrategy(marketTimeline, annualTargetReturnPct, monthlyB
   return summarizeStrategy({
     key: DYNAMIC_STRATEGY_KEY,
     label: "目标收益带宽定投",
-    description: `按标准价值平均法，预期年化 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月、波动带 ±${band.toFixed(0)} 美元，投入区间 [${(monthlyBaseAmount - band).toFixed(0)}, ${(monthlyBaseAmount + band).toFixed(0)}] 美元${sellNote}。`,
+    description: `标准 VA（Edleson），V(n)=a×[(1+r月)ⁿ−1]/r月，每月固定贡献 a，预期年化 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月、波动带 ±${band.toFixed(0)} 美元，投入区间 [${(monthlyBaseAmount - band).toFixed(0)}, ${(monthlyBaseAmount + band).toFixed(0)}] 美元${sellNote}。`,
     principal: netPrincipal,
     shares,
     cashFlows,
