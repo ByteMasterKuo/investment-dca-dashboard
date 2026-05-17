@@ -279,6 +279,79 @@ function calculate() {
   document.getElementById("result-section").scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+// ── 12 个月目标规划 ───────────────────────────────────────────────────────────
+
+function generatePlan() {
+  const cfg = getConfig();
+
+  if (!cfg.a || !cfg.b || !cfg.rPct) {
+    alert("请先填写策略参数：月定投基准 a、波动带宽 b、预期年化收益率 r%");
+    return;
+  }
+  const planValueEl = document.getElementById("plan-value");
+  const V0 = Number(planValueEl.value);
+  if (!planValueEl.value || isNaN(V0) || V0 < 0) {
+    alert("请输入当前持仓市值");
+    return;
+  }
+  if (cfg.strategyType === "inflation" && !cfg.xPct) {
+    alert("通胀调整 VA 需要在策略参数中填写通货膨胀率 x%");
+    return;
+  }
+
+  const annualR = cfg.rPct / 100;
+  const annualX = cfg.strategyType === "inflation" ? cfg.xPct / 100 : 0;
+  const r = monthlyRate(annualR);
+  const x = monthlyRate(annualX);
+
+  // 尝试从已有字段推算当前第 n 月（通胀 VA 需要绝对月数来缩放带宽）
+  let baseN = 0;
+  const curMonthVal = document.getElementById("cur-month").value;
+  if (cfg.startDate && curMonthVal) {
+    const n = monthN(cfg.startDate, curMonthVal);
+    if (n > 0) baseN = n;
+  }
+
+  const noteEl = document.getElementById("plan-note");
+  if (annualX > 0 && baseN === 0) {
+    noteEl.textContent = "⚠️ 通胀调整 VA：未能推算当前月数（请在"本月持仓"填写当前月份和起始月份），带宽缩放从第 1 月开始估算。";
+    baseN = 0; // 下方循环从 k=1 开始，absN = k
+  } else if (annualX > 0) {
+    noteEl.textContent = `当前为第 ${baseN} 个月，通胀缩放从第 ${baseN + 1} 月起累计。`;
+  } else {
+    noteEl.textContent = `标准 VA（x=0），月买入区间固定：[${fmtUSD(Math.max(cfg.a - cfg.b, 0), 0)}, ${fmtUSD(cfg.a + cfg.b, 0)}]。`;
+  }
+
+  const rows = [];
+  let prevTarget = V0;
+
+  for (let k = 1; k <= 12; k++) {
+    const absN    = baseN + k;
+    const effBase = annualX > 0 ? cfg.a * (1 + x) ** absN : cfg.a;
+    const effBand = annualX > 0 ? cfg.b * (1 + x) ** absN : cfg.b;
+    const newTarget  = prevTarget * (1 + r) + effBase;
+    const totalInc   = newTarget - V0;
+    const monthInc   = newTarget - prevTarget;
+    const lo         = Math.max(effBase - effBand, 0);
+    const hi         = effBase + effBand;
+    const maxSell    = Math.max(effBand - effBase, 0);
+    rows.push({ k, newTarget, totalInc, monthInc, lo, hi, maxSell });
+    prevTarget = newTarget;
+  }
+
+  document.getElementById("plan-body").innerHTML = rows.map(row => `<tr>
+    <td>第 ${row.k} 个月</td>
+    <td><strong>${fmtUSD(row.newTarget)}</strong></td>
+    <td class="positive">+${fmtUSD(row.totalInc, 0)}</td>
+    <td>${fmtUSD(row.monthInc, 0)}</td>
+    <td>${fmtUSD(row.lo, 0)} – ${fmtUSD(row.hi, 0)}</td>
+    <td>${row.maxSell > 0 ? fmtUSD(row.maxSell, 0) : "—"}</td>
+  </tr>`).join("");
+
+  document.getElementById("plan-result").style.display = "";
+  document.getElementById("plan-result").scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
 // ── 记录操作 ─────────────────────────────────────────────────────────────────
 
 function recordOperation() {
@@ -384,6 +457,7 @@ function init() {
 
   // 绑定按钮
   document.getElementById("calc-btn").addEventListener("click", calculate);
+  document.getElementById("plan-btn").addEventListener("click", generatePlan);
   document.getElementById("record-btn").addEventListener("click", recordOperation);
   document.getElementById("export-btn").addEventListener("click", exportCSV);
   document.getElementById("clear-btn").addEventListener("click", () => {
@@ -401,6 +475,11 @@ function init() {
     document.getElementById(id).addEventListener("keydown", e => {
       if (e.key === "Enter") calculate();
     });
+  });
+
+  // Enter 键触发 12 个月规划生成
+  document.getElementById("plan-value").addEventListener("keydown", e => {
+    if (e.key === "Enter") generatePlan();
   });
 }
 
