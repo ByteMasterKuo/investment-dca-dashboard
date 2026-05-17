@@ -24,7 +24,13 @@
     <!-- ① 策略参数 -->
     <section class="panel">
       <div class="panel-header">
-        <h2>策略参数</h2>
+        <div style="display:flex;align-items:center;gap:14px">
+          <h2>策略参数</h2>
+          <select id="cfg-strategy" class="strategy-select">
+            <option value="standard">标准 VA</option>
+            <option value="inflation">通胀调整 VA</option>
+          </select>
+        </div>
         <p id="config-status" class="meta-text">参数将自动保存到浏览器</p>
       </div>
       <div class="form-grid form-grid--5">
@@ -48,10 +54,15 @@
           <span>ETF 名称（选填）</span>
           <input id="cfg-etf" type="text" placeholder="EQQQ">
         </label>
+        <label id="field-x" class="field" style="display:none">
+          <span>通货膨胀率 x%</span>
+          <input id="cfg-x" type="number" min="0" max="20" step="0.5" placeholder="3">
+        </label>
       </div>
       <p class="formula-note">
-        投入区间 = [a−b, a+b]。当 b ≤ a 时只买不卖；当 b &gt; a 时允许减仓，每月最大减仓额为 b−a。
-        目标市值路径：<code>V(n) = a × n × (1 + r月)ⁿ</code>
+        投入区间 = [a−b, a+b]，通胀调整 VA 时按 (1+x月)ⁿ 缩放。当 b ≤ a 只买不卖，当 b &gt; a 允许减仓。<br>
+        <strong>标准 VA：</strong><code>V(n) = a × n × (1 + r月)ⁿ</code>
+        <strong>通胀调整：</strong><code>V(n) = V(n−1) × (1 + r月) + a × (1 + x月)ⁿ</code>
       </p>
     </section>
 
