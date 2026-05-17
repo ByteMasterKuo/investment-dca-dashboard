@@ -314,7 +314,7 @@ function generatePlan() {
 
   const noteEl = document.getElementById("plan-note");
   if (annualX > 0 && baseN === 0) {
-    noteEl.textContent = "⚠️ 通胀调整 VA：未能推算当前月数（请在"本月持仓"填写当前月份和起始月份），带宽缩放从第 1 月开始估算。";
+    noteEl.textContent = "⚠️ 通胀调整 VA：未能推算当前月数（请在「本月持仓」填写当前月份和起始月份），带宽缩放从第 1 月开始估算。";
     baseN = 0; // 下方循环从 k=1 开始，absN = k
   } else if (annualX > 0) {
     noteEl.textContent = `当前为第 ${baseN} 个月，通胀缩放从第 ${baseN + 1} 月起累计。`;
