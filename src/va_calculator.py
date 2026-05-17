@@ -33,8 +33,11 @@ def monthly_rate(annual_r: float) -> float:
 
 
 def target_value(n: int, base: float, annual_r: float) -> float:
+    """年金终值公式：V(n) = a×[(1+r月)ⁿ−1]/r月，Edleson 原版 VA"""
     r = monthly_rate(annual_r)
-    return base * n * (1 + r) ** n
+    if abs(r) < 1e-10:
+        return base * n   # r≈0 时退化为线性
+    return base * ((1 + r) ** n - 1) / r
 
 
 def va_action(current_value: float, n: int, base: float, annual_r: float, band: float) -> dict:

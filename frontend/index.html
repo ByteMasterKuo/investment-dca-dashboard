@@ -60,7 +60,7 @@
       </div>
       <p class=”formula-note”>
         可修改起投和截止时间，所有策略都会在该区间内重新回测。通胀参数同时用于：①把历史投入折算到回测结束日得到”通胀对齐本金”；②作为”通胀调整 VA”的投入增长率 x。<br>
-        <strong>目标收益带宽定投（标准 VA）：</strong><code>V(n) = a × n × (1 + r月)ⁿ</code>，单月投入限制在 <code>[a−b, a+b]</code>。<br>
+        <strong>目标收益带宽定投（标准 VA，x=0）：</strong><code>V(n) = a × [(1+r月)ⁿ−1] / r月</code>，等价于每月固定贡献 a，投入限制在 <code>[a−b, a+b]</code>。<br>
         <strong>通胀调整 VA：</strong><code>V(n) = V(n-1) × (1 + r月) + a × (1 + x月)ⁿ</code>，投入基线与带宽每月随通胀率 x 增长，更贴合实际收入变化。<br>
         当 b ≤ a 时两种 VA 均只买不卖；当 b &gt; a 时允许减仓，最大减仓额为当月有效带宽减去基线。
       </p>

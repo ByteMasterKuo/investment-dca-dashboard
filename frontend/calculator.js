@@ -4,9 +4,12 @@ function monthlyRate(annualR) {
   return (1 + annualR) ** (1 / 12) - 1;
 }
 
+// 标准 VA 年金终值公式：每月固定贡献 a，复利目标 V(n) = a×[(1+r月)ⁿ−1]/r月
+// 等价于 V(n) = V(n-1)×(1+r月) + a，即 Edleson 原版 VA
 function targetValue(n, base, annualR) {
   const r = monthlyRate(annualR);
-  return base * n * (1 + r) ** n;
+  if (Math.abs(r) < 1e-10) return base * n;   // r≈0 时退化为线性
+  return base * ((1 + r) ** n - 1) / r;
 }
 
 // 通胀调整 VA：V(n) = V(n-1)×(1+r月) + base×(1+x月)ⁿ

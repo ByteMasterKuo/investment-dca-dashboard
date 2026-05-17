@@ -61,8 +61,8 @@
       </div>
       <p class="formula-note">
         投入区间 = [a−b, a+b]，通胀调整 VA 时按 (1+x月)ⁿ 缩放。当 b ≤ a 只买不卖，当 b &gt; a 允许减仓。<br>
-        <strong>标准 VA：</strong><code>V(n) = a × n × (1 + r月)ⁿ</code>
-        <strong>通胀调整：</strong><code>V(n) = V(n−1) × (1 + r月) + a × (1 + x月)ⁿ</code>
+        <strong>标准 VA（x=0）：</strong><code>V(n) = a × [(1+r月)ⁿ − 1] / r月</code>，等价于 <code>V(n) = V(n−1)×(1+r月) + a</code>，每月固定贡献 a。<br>
+        <strong>通胀调整（x&gt;0）：</strong><code>V(n) = V(n−1) × (1+r月) + a×(1+x月)ⁿ</code>，月贡献随 x% 增长。
       </p>
     </section>
 
