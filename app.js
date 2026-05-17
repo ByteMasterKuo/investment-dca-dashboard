@@ -426,8 +426,8 @@ function simulateDynamicStrategy(marketTimeline, annualTargetReturnPct, monthlyB
 
   return summarizeStrategy({
     key: DYNAMIC_STRATEGY_KEY,
-    label: "目标收益带宽定投",
-    description: `标准 VA（Edleson），V(n)=a×[(1+r月)ⁿ−1]/r月，每月固定贡献 a，预期年化 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月、波动带 ±${band.toFixed(0)} 美元，投入区间 [${(monthlyBaseAmount - band).toFixed(0)}, ${(monthlyBaseAmount + band).toFixed(0)}] 美元${sellNote}。`,
+    label: "带宽 VA 定投",
+    description: `标准价值平均法（VA）加可接受波动带宽 b，每月贡献固定 a 元追赶目标路径，但单月操作钳制在 [a−b, a+b] 内，避免单次大额操作。预期年化 ${annualTargetReturnPct.toFixed(1)}%、基准 ${monthlyBaseAmount.toFixed(0)} 美元/月、带宽 b=${band.toFixed(0)} 美元${sellNote}。`,
     principal: netPrincipal,
     shares,
     cashFlows,
