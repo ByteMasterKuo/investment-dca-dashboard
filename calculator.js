@@ -327,7 +327,8 @@ function calculate() {
   const priceInput  = document.getElementById("cur-price").value;
   const price       = priceInput ? Number(priceInput) : null;
 
-  if (!cfg.startDate || !cfg.a || !cfg.b || !cfg.rPct || !currentYM || !currentVal) {
+  const curValueRaw = document.getElementById("cur-value").value;
+  if (!cfg.startDate || !cfg.a || !cfg.b || !cfg.rPct || !currentYM || curValueRaw === "") {
     showError("calc-btn", "请填写所有必填项（策略参数 + 当前月份 + 当前市值）");
     return;
   }
