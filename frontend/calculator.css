@@ -2,6 +2,27 @@
 .form-grid--5 { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 .form-grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 
+/* ── Profile 工具栏 ─────────────────────────────────────── */
+.profile-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.profile-select-el {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 140px;
+}
+.profile-select-el:focus { outline: 2px solid var(--accent); outline-offset: 2px; }
+
 /* ── 策略选择器 ─────────────────────────────────────────── */
 .strategy-select {
   border: 1px solid var(--border);

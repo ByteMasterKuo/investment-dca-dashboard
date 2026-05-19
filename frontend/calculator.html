@@ -24,16 +24,26 @@
     <!-- ① 策略参数 -->
     <section class="panel">
       <div class="panel-header">
-        <div style="display:flex;align-items:center;gap:14px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
           <h2>策略参数</h2>
           <select id="cfg-strategy" class="strategy-select">
             <option value="standard">标准 VA</option>
             <option value="inflation">通胀调整 VA</option>
           </select>
         </div>
-        <p id="config-status" class="meta-text">参数将自动保存到浏览器</p>
+        <div class="profile-bar">
+          <select id="profile-select" class="profile-select-el"></select>
+          <button id="profile-save-btn" class="btn-secondary" type="button">💾 保存</button>
+          <button id="profile-add-btn" class="btn-secondary" type="button">＋ 新增</button>
+          <button id="profile-delete-btn" class="btn-danger" type="button">删除</button>
+        </div>
+        <p id="config-status" class="meta-text"></p>
       </div>
       <div class="form-grid form-grid--5">
+        <label class="field">
+          <span>策略名称</span>
+          <input id="cfg-name" type="text" placeholder="如：EQQQ 定投">
+        </label>
         <label class="field">
           <span>策略起始月份</span>
           <input id="cfg-start" type="month" placeholder="2024-01">
@@ -236,6 +246,6 @@
     </section>
 
   </main>
-  <script src="./calculator.js"></script>
+  <script src="./calculator.js?v=2"></script>
 </body>
 </html>
