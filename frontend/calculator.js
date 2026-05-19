@@ -48,6 +48,21 @@ function addMonths(ym, delta) {
   return `${y + Math.floor(total / 12)}-${String(total % 12 + 1).padStart(2, "0")}`;
 }
 
+// ── 行内错误提示 ──────────────────────────────────────────────────────────────
+
+function showError(anchorId, msg) {
+  const anchor = document.getElementById(anchorId);
+  let el = document.getElementById(anchorId + "-error");
+  if (!el) {
+    el = document.createElement("p");
+    el.id = anchorId + "-error";
+    el.style.cssText = "color:#c2410c;font-size:13px;margin:8px 0 0;font-weight:500";
+    anchor.insertAdjacentElement("afterend", el);
+  }
+  el.textContent = "⚠️ " + msg;
+  setTimeout(() => { if (el.parentNode) el.textContent = ""; }, 5000);
+}
+
 // ── 格式化 ───────────────────────────────────────────────────────────────────
 
 function fmtUSD(v, decimals = 2) {
@@ -154,16 +169,16 @@ function calculate() {
 
   // ── 验证 ────────────────────────────────────────────────────────────────────
   if (!cfg.startDate || !cfg.a || !cfg.b || !cfg.rPct || !currentYM || !currentVal) {
-    alert("请填写所有必填项（策略参数 + 当前月份 + 当前市值）");
+    showError("calc-btn", "请填写所有必填项（策略参数 + 当前月份 + 当前市值）");
     return;
   }
   if (cfg.strategyType === "inflation" && !cfg.xPct) {
-    alert("通胀调整 VA 需要填写通货膨胀率 x%");
+    showError("calc-btn", "通胀调整 VA 需要填写通货膨胀率 x%");
     return;
   }
   const n = monthN(cfg.startDate, currentYM);
   if (n <= 0) {
-    alert("当前月份早于策略起始月份，请检查。");
+    showError("calc-btn", "当前月份早于策略起始月份，请检查。");
     return;
   }
 
@@ -285,17 +300,17 @@ function generatePlan() {
   const cfg = getConfig();
 
   if (!cfg.a || !cfg.b || !cfg.rPct) {
-    alert("请先填写策略参数：月定投基准 a、波动带宽 b、预期年化收益率 r%");
+    showError("plan-btn", "请先填写策略参数：月定投基准 a、波动带宽 b、预期年化收益率 r%");
     return;
   }
   const planValueEl = document.getElementById("plan-value");
   const V0 = Number(planValueEl.value);
   if (!planValueEl.value || isNaN(V0) || V0 < 0) {
-    alert("请输入当前持仓市值");
+    showError("plan-btn", "请输入当前持仓市值");
     return;
   }
   if (cfg.strategyType === "inflation" && !cfg.xPct) {
-    alert("通胀调整 VA 需要在策略参数中填写通货膨胀率 x%");
+    showError("plan-btn", "通胀调整 VA 需要在策略参数中填写通货膨胀率 x%");
     return;
   }
 
@@ -399,7 +414,7 @@ function recordOperation() {
 
 function exportCSV() {
   const rows = loadHistory();
-  if (!rows.length) { alert("暂无历史记录。"); return; }
+  if (!rows.length) { showError("export-btn", "暂无历史记录"); return; }
 
   const headers = ["月份","第n月","目标市值","操作前市值","操作","操作金额","操作后市值","ETF单价","备注","记录时间"];
   const lines   = [headers.join(",")];
