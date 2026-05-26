@@ -83,16 +83,16 @@
     <!-- ② 当前持仓输入 -->
     <section class="panel">
       <div class="panel-header">
-        <h2>本月持仓</h2>
-        <p>输入当前市值，计算本月操作金额</p>
+        <h2>本月持仓（建仓）</h2>
+        <p>输入本月已持有市值 → 计算<strong>下月</strong>应买入 / 卖出的金额</p>
       </div>
       <div class="form-grid form-grid--4">
         <label class="field">
-          <span>当前月份</span>
+          <span>建仓月份（本月）</span>
           <input id="cur-month" type="month">
         </label>
         <label class="field">
-          <span>当前持仓市值（USD）</span>
+          <span>本月持仓市值（USD）</span>
           <input id="cur-value" type="number" min="0" step="100" placeholder="28000">
         </label>
         <label class="field">
@@ -105,7 +105,7 @@
         </label>
       </div>
       <div style="margin-top:14px">
-        <button id="calc-btn" class="btn-primary" type="button">计算本月操作 →</button>
+        <button id="calc-btn" class="btn-primary" type="button">计算下月操作 →</button>
       </div>
     </section>
 
@@ -156,19 +156,19 @@
         <!-- 左：指标卡片 -->
         <div class="result-cards">
           <div class="metric-card">
-            <div class="metric-label">目标市值</div>
+            <div class="metric-label">下月目标市值</div>
             <div class="metric-value" id="res-target">—</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">当前市值</div>
+            <div class="metric-label">本月持仓市值</div>
             <div class="metric-value" id="res-current">—</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">偏离目标</div>
+            <div class="metric-label">偏离下月目标</div>
             <div class="metric-value" id="res-dev">—</div>
           </div>
           <div class="metric-card">
-            <div class="metric-label">操作后市值</div>
+            <div class="metric-label">下月操作后市值</div>
             <div class="metric-value" id="res-after">—</div>
           </div>
         </div>
@@ -252,6 +252,6 @@
     </section>
 
   </main>
-  <script src="./calculator.js?v=5"></script>
+  <script src="./calculator.js?v=6"></script>
 </body>
 </html>
