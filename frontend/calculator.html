@@ -58,7 +58,11 @@
         </label>
         <label class="field">
           <span>预期年化收益率 r%</span>
-          <input id="cfg-r" type="number" min="0" step="0.5" placeholder="10">
+          <input id="cfg-r" type="number" min="0" step="0.1" placeholder="10">
+        </label>
+        <label class="field">
+          <span>预期月化收益率 r月%</span>
+          <input id="cfg-r-monthly" type="number" min="0" step="0.01" placeholder="0.80">
         </label>
         <label class="field">
           <span>ETF 名称（选填）</span>
@@ -248,6 +252,6 @@
     </section>
 
   </main>
-  <script src="./calculator.js?v=4"></script>
+  <script src="./calculator.js?v=5"></script>
 </body>
 </html>
