@@ -111,9 +111,6 @@ function profileHistoryKey(id) { return `va_history_${id}`; }
 
 // 旧版单标的数据迁移
 function migrateIfNeeded() {
-  const profiles = loadProfiles();
-  if (profiles.length > 0) return;
-
   const oldConfig = (() => {
     try { return JSON.parse(localStorage.getItem("va_calculator_config") || "null"); }
     catch { return null; }
@@ -123,12 +120,37 @@ function migrateIfNeeded() {
     catch { return []; }
   })();
 
-  const id   = genId();
-  const name = oldConfig?.etfName || oldConfig?.name || "默认策略";
-  saveProfiles([{ id, name }]);
-  setActiveId(id);
-  if (oldConfig)         localStorage.setItem(profileConfigKey(id),  JSON.stringify(oldConfig));
-  if (oldHistory.length) localStorage.setItem(profileHistoryKey(id), JSON.stringify(oldHistory));
+  if (!oldConfig && !oldHistory.length) return; // 无旧数据，无需迁移
+
+  const profiles = loadProfiles();
+  const activeId = getActiveId();
+
+  // 情况1：从未使用新系统 → 全新迁移
+  // 情况2：新系统已有 profile 但激活的那个没有配置 → 补迁移
+  const needsMigrate = profiles.length === 0
+    || (activeId && !localStorage.getItem(profileConfigKey(activeId)));
+
+  if (!needsMigrate) return;
+
+  if (profiles.length === 0) {
+    const id   = genId();
+    const name = oldConfig?.etfName || oldConfig?.name || "默认策略";
+    saveProfiles([{ id, name }]);
+    setActiveId(id);
+    if (oldConfig)         localStorage.setItem(profileConfigKey(id),  JSON.stringify(oldConfig));
+    if (oldHistory.length) localStorage.setItem(profileHistoryKey(id), JSON.stringify(oldHistory));
+  } else if (activeId) {
+    // 把旧数据填入现有的空 profile
+    if (oldConfig)         localStorage.setItem(profileConfigKey(activeId),  JSON.stringify(oldConfig));
+    if (oldHistory.length) localStorage.setItem(profileHistoryKey(activeId), JSON.stringify(oldHistory));
+    // 更新 profile 名称
+    const ps  = loadProfiles();
+    const idx = ps.findIndex(p => p.id === activeId);
+    if (idx >= 0) {
+      ps[idx].name = oldConfig?.etfName || oldConfig?.name || ps[idx].name;
+      saveProfiles(ps);
+    }
+  }
 }
 
 // ── 读写当前标的的 config / history ──────────────────────────────────────────
@@ -607,6 +629,9 @@ function init() {
   if (cfg) {
     applyConfig(cfg);
     setStatus("📁 已加载上次保存的参数");
+  } else if (getActiveId()) {
+    // profile 存在但无配置（空白策略），提示用户填写
+    setStatus("✏️ 请填写策略参数后点击「保存」");
   }
 
   // 设置当前月份默认值
