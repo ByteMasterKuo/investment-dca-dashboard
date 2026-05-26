@@ -374,13 +374,17 @@ function calculate() {
 
   const annualR = cfg.rPct / 100;
   const annualX = cfg.strategyType === "inflation" ? cfg.xPct / 100 : 0;
-  const res     = vaAction(currentVal, n, cfg.a, annualR, cfg.b, annualX);
+
+  // 当前月份 = 建仓完成（第 n 月），下月（第 n+1 月）才开始 VA 操作
+  const nextN   = n + 1;
+  const nextYM  = addMonths(currentYM, 1);
+  const res     = vaAction(currentVal, nextN, cfg.a, annualR, cfg.b, annualX);
   const { target, raw, clamped, clipped, effBase, effBand } = res;
   const afterVal = currentVal + clamped;
   const devPct   = (currentVal / target - 1) * 100;
   const afterPct = (afterVal  / target - 1) * 100;
 
-  lastResult = { cfg, currentYM, n, target, raw, clamped, currentVal, afterVal, price, annualX };
+  lastResult = { cfg, currentYM: nextYM, n: nextN, target, raw, clamped, currentVal, afterVal, price, annualX };
 
   let actionType, icon, amountText, sharesText, cardClass;
   if (Math.abs(clamped) < 0.01) {
@@ -400,8 +404,8 @@ function calculate() {
   }
 
   const etfLabel = cfg.etfName ? ` · ${cfg.etfName}` : "";
-  document.getElementById("result-title").textContent    = `第 ${n} 个月${etfLabel}`;
-  document.getElementById("result-subtitle").textContent = `${cfg.startDate} 起投 · ${currentYM}`;
+  document.getElementById("result-title").textContent    = `下月操作（第 ${nextN} 月）${etfLabel}`;
+  document.getElementById("result-subtitle").textContent = `${cfg.startDate} 起投 · 本月建仓 ${currentYM} · 下月 ${nextYM}`;
 
   const devEl = document.getElementById("res-dev");
   document.getElementById("res-target").textContent  = fmtUSD(target);
@@ -412,7 +416,7 @@ function calculate() {
 
   const card = document.getElementById("action-card");
   card.className = `action-card ${cardClass}`;
-  document.getElementById("action-month").textContent  = `${currentYM}  ·  策略第 ${n} 个月`;
+  document.getElementById("action-month").textContent  = `${nextYM}  ·  策略第 ${nextN} 个月`;
   document.getElementById("action-icon").textContent   = icon;
   document.getElementById("action-amount").textContent = amountText;
   document.getElementById("action-shares").textContent = sharesText;
@@ -434,12 +438,13 @@ function calculate() {
 
   const recordBtn = document.getElementById("record-btn");
   recordBtn.disabled    = false;
-  recordBtn.textContent = "📝 记录本月操作";
+  recordBtn.textContent = "📝 记录下月操作";
 
+  // 未来路径从下月（n+1）之后的月份开始展示
   const futureBody = document.getElementById("future-body");
   const xm = monthlyRate(annualX);
   futureBody.innerHTML = Array.from({ length: 6 }, (_, i) => {
-    const fi   = i + 1;
+    const fi   = i + 2;          // 从 n+2 开始（n+1 已在主结果显示）
     const fYM  = addMonths(currentYM, fi);
     const fn   = n + fi;
     const ft   = annualX > 0
@@ -451,8 +456,8 @@ function calculate() {
     const lo      = Math.max(fBase - fBand, 0);
     const hi      = fBase + fBand;
     const maxSell = Math.max(fBand - fBase, 0);
-    const rowClass = fi === 1 ? "next-month" : "";
-    const nextTag  = fi === 1 ? " ← 下月" : "";
+    const rowClass = fi === 2 ? "next-month" : "";
+    const nextTag  = fi === 2 ? " ← 下下月" : "";
     return `<tr class="${rowClass}">
       <td>${fYM}${nextTag}</td><td>${fn}</td>
       <td>${fmtUSD(ft)}</td>
