@@ -228,6 +228,13 @@ function saveCurrentProfile() {
   saveConfig(cfg);
   renderProfileSelect();
   setStatus(`✅ 已保存「${cfg.name || "策略"}」（${new Date().toLocaleString("zh-CN")}）`);
+
+  // 自动同步到本地文件（静默，不改状态文字）
+  fetch(STRATEGIES_API, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(collectAllData()),
+  }).catch(() => {}); // 非本地模式下忽略错误
 }
 
 function addNewProfile() {
@@ -571,6 +578,96 @@ function recordOperation() {
   btn.disabled    = true;
 }
 
+// ── 文件存储同步 ──────────────────────────────────────────────────────────────
+
+const STRATEGIES_API = "/api/strategies";
+
+/** 把所有 profile 数据打包成一个对象 */
+function collectAllData() {
+  const profiles = loadProfiles();
+  return {
+    version:  2,
+    saved_at: new Date().toISOString(),
+    profiles: profiles.map(p => ({
+      id:      p.id,
+      name:    p.name,
+      config:  JSON.parse(localStorage.getItem(profileConfigKey(p.id))  || "null"),
+      history: JSON.parse(localStorage.getItem(profileHistoryKey(p.id)) || "[]"),
+    })),
+  };
+}
+
+/** 把打包数据还原到 localStorage */
+function restoreAllData(data) {
+  if (!data?.profiles?.length) return 0;
+  const existing = loadProfiles();
+  const existingIds = new Set(existing.map(p => p.id));
+
+  data.profiles.forEach(p => {
+    if (!existingIds.has(p.id)) existing.push({ id: p.id, name: p.name });
+    else {
+      const idx = existing.findIndex(e => e.id === p.id);
+      if (idx >= 0) existing[idx].name = p.name;
+    }
+    if (p.config)        localStorage.setItem(profileConfigKey(p.id),  JSON.stringify(p.config));
+    if (p.history?.length) localStorage.setItem(profileHistoryKey(p.id), JSON.stringify(p.history));
+  });
+
+  saveProfiles(existing);
+  return data.profiles.length;
+}
+
+/** 同步到本地文件（需要本地 server.py 运行） */
+async function syncToFile() {
+  const btn = document.getElementById("file-sync-btn");
+  btn.disabled = true;
+  btn.textContent = "同步中…";
+  try {
+    const payload = collectAllData();
+    const res = await fetch(STRATEGIES_API, {
+      method:  "POST",
+      headers: { "Content-Type": "application/json" },
+      body:    JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    setStatus(`✅ 已同步到文件（${new Date().toLocaleString("zh-CN")}）`);
+    btn.textContent = "📤 同步到文件";
+  } catch (e) {
+    setStatus("❌ 同步失败：" + e.message);
+    btn.textContent = "📤 同步到文件";
+  }
+  btn.disabled = false;
+}
+
+/** 从本地文件加载（需要本地 server.py 运行） */
+async function loadFromFile() {
+  const btn = document.getElementById("file-load-btn");
+  btn.disabled = true;
+  btn.textContent = "加载中…";
+  try {
+    const res = await fetch(STRATEGIES_API + "?v=" + Date.now());
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    if (!data) { setStatus("📂 文件为空，无数据"); btn.disabled = false; btn.textContent = "📥 从文件加载"; return; }
+
+    const count = restoreAllData(data);
+    renderProfileSelect();
+
+    // 激活文件里第一个 profile（若当前无激活）
+    if (!getActiveId() && data.profiles?.length) {
+      setActiveId(data.profiles[0].id);
+    }
+    const cfg = loadConfig();
+    if (cfg) applyConfig(cfg);
+    renderHistory();
+    setStatus(`✅ 已从文件加载 ${count} 个策略`);
+  } catch (e) {
+    setStatus("❌ 加载失败（请确认已用 server.py 启动服务）：" + e.message);
+  }
+  btn.disabled = false;
+  btn.textContent = "📥 从文件加载";
+}
+
 // ── 导出 CSV ─────────────────────────────────────────────────────────────────
 
 function exportCSV() {
@@ -649,6 +746,16 @@ function init() {
   document.getElementById("profile-select").addEventListener("change", e => {
     if (e.target.value) switchProfile(e.target.value);
   });
+
+  // 绑定文件同步按钮
+  document.getElementById("file-sync-btn").addEventListener("click", syncToFile);
+  document.getElementById("file-load-btn").addEventListener("click", loadFromFile);
+
+  // 启动时自动从文件加载（若有数据则合并）
+  fetch(STRATEGIES_API + "?v=" + Date.now())
+    .then(r => r.ok ? r.json() : null)
+    .then(data => { if (data?.profiles?.length) { restoreAllData(data); renderProfileSelect(); renderHistory(); } })
+    .catch(() => {}); // 非本地模式忽略
 
   // 绑定功能按钮
   document.getElementById("calc-btn").addEventListener("click", calculate);

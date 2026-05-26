@@ -218,9 +218,11 @@
     <section class="panel">
       <div class="panel-header">
         <h2>历史操作记录</h2>
-        <div style="display:flex;gap:10px">
-          <button id="export-btn" class="btn-secondary" type="button">导出 CSV</button>
-          <button id="clear-btn"  class="btn-danger"    type="button">清空记录</button>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <button id="file-sync-btn" class="btn-secondary" type="button">📤 同步到文件</button>
+          <button id="file-load-btn" class="btn-secondary" type="button">📥 从文件加载</button>
+          <button id="export-btn"    class="btn-secondary" type="button">导出 CSV</button>
+          <button id="clear-btn"     class="btn-danger"    type="button">清空记录</button>
         </div>
       </div>
       <div class="table-wrap">
@@ -246,6 +248,6 @@
     </section>
 
   </main>
-  <script src="./calculator.js?v=3"></script>
+  <script src="./calculator.js?v=4"></script>
 </body>
 </html>
