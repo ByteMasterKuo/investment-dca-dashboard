@@ -302,6 +302,7 @@ function applyConfig(cfg) {
   document.getElementById("cfg-a").value         = cfg.a            || "";
   document.getElementById("cfg-b").value         = cfg.b            || "";
   document.getElementById("cfg-r").value         = cfg.rPct         || "";
+  document.getElementById("cfg-r-monthly").value = cfg.rPct ? annualToMonthly(cfg.rPct).toFixed(4) : "";
   document.getElementById("cfg-etf").value       = cfg.etfName      || "";
   document.getElementById("cfg-strategy").value  = cfg.strategyType || "standard";
   document.getElementById("cfg-x").value         = cfg.xPct         || "";
@@ -310,7 +311,7 @@ function applyConfig(cfg) {
 }
 
 function clearConfig() {
-  ["cfg-name","cfg-start","cfg-a","cfg-b","cfg-r","cfg-etf","cfg-x"].forEach(id => {
+  ["cfg-name","cfg-start","cfg-a","cfg-b","cfg-r","cfg-r-monthly","cfg-etf","cfg-x"].forEach(id => {
     document.getElementById(id).value = "";
   });
   document.getElementById("cfg-strategy").value = "standard";
@@ -693,9 +694,38 @@ function exportCSV() {
   URL.revokeObjectURL(url);
 }
 
+// ── 年化 ↔ 月化 双向联动 ────────────────────────────────────────────────────
+
+function annualToMonthly(annualPct) {
+  // r月 = (1 + r年)^(1/12) - 1
+  return ((1 + annualPct / 100) ** (1 / 12) - 1) * 100;
+}
+
+function monthlyToAnnual(monthlyPct) {
+  // r年 = (1 + r月)^12 - 1
+  return ((1 + monthlyPct / 100) ** 12 - 1) * 100;
+}
+
+function syncRateFields(source) {
+  const annualEl  = document.getElementById("cfg-r");
+  const monthlyEl = document.getElementById("cfg-r-monthly");
+  if (source === "annual" && annualEl.value !== "") {
+    const m = annualToMonthly(Number(annualEl.value));
+    monthlyEl.value = m.toFixed(4);
+  } else if (source === "monthly" && monthlyEl.value !== "") {
+    const a = monthlyToAnnual(Number(monthlyEl.value));
+    annualEl.value = a.toFixed(4);
+  }
+}
+
 // ── 参数变化时自动保存草稿 ────────────────────────────────────────────────────
 
 function bindAutoSave() {
+  // 年化 → 月化
+  document.getElementById("cfg-r").addEventListener("input", () => syncRateFields("annual"));
+  // 月化 → 年化
+  document.getElementById("cfg-r-monthly").addEventListener("input", () => syncRateFields("monthly"));
+
   ["cfg-name","cfg-start","cfg-a","cfg-b","cfg-r","cfg-etf","cfg-strategy","cfg-x"].forEach(id => {
     document.getElementById(id).addEventListener("change", () => {
       const activeId = getActiveId();
